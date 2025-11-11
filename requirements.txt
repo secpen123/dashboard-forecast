@@ -1,0 +1,12 @@
+streamlit
+pandas
+folium
+streamlit-folium
+feedparser
+plotly
+wordcloud
+matplotlib
+Sastrawi
+scikit-learn
+textblob
+deep-translator
