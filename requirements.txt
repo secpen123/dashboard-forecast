@@ -10,3 +10,4 @@ Sastrawi
 scikit-learn
 textblob
 deep-translator
+tabulate
