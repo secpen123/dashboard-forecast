@@ -107,7 +107,9 @@ body, div[data-testid="stAppViewContainer"] {
 
 
 # ================== LOAD LOGO ==================
-with open("E:/1_Tugas Akhir/Olah Data/Misc/Forecast/logo_base64.txt", "r") as f:
+logo_path = os.path.join("assets", "logo_base64.txt")
+
+with open(logo_path, "r") as f:
     logo_base64 = f.read()
 
 # ================== HEADER ==================
@@ -757,3 +759,4 @@ with tabs[2]:
 
         # Tabel berita lengkap
         st.dataframe(df_news[["Judul", "Tanggal", "Media", "Kategori Sentimen", "Deskripsi"]])
+
