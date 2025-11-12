@@ -3,6 +3,7 @@ import streamlit as st
 import folium
 from streamlit_folium import st_folium
 import feedparser
+import os
 from urllib.parse import quote
 from datetime import datetime, timedelta
 import time
@@ -759,4 +760,5 @@ with tabs[2]:
 
         # Tabel berita lengkap
         st.dataframe(df_news[["Judul", "Tanggal", "Media", "Kategori Sentimen", "Deskripsi"]])
+
 
