@@ -3,7 +3,6 @@ import streamlit as st
 import folium
 from streamlit_folium import st_folium
 import feedparser
-import os
 from urllib.parse import quote
 from datetime import datetime, timedelta
 import time
@@ -108,9 +107,7 @@ body, div[data-testid="stAppViewContainer"] {
 
 
 # ================== LOAD LOGO ==================
-logo_path = os.path.join("assets", "logo_base64.txt")
-
-with open(logo_path, "r") as f:
+with open("E:/1_Tugas Akhir/Olah Data/Misc/Forecast/logo_base64.txt", "r") as f:
     logo_base64 = f.read()
 
 # ================== HEADER ==================
@@ -128,9 +125,8 @@ st.markdown(f"""
 # ================== TAB LABELS ==================
 tab_labels = [
     "Human Intelligent",
-    "Statistik Kerawanan dan Aktivitas",
-    "Liputan Media",
-    "Analisis Sentimen Media"
+    "Statistik Human Intelligent",
+    "Open Source Intelligent",
 ]
 tabs = st.tabs(tab_labels)
 
@@ -400,7 +396,18 @@ with tabs[0]:
             selected_coords = st.session_state.get("selected_coords", None)
 
             # Gabungkan data kerawanan & pertamina (untuk tampilan default)
-            df_all = pd.concat([df_k, df_u], ignore_index=True).reset_index(drop=True)
+            # Gabungkan data sesuai checkbox yang aktif
+            frames = []
+            if show_kerawanan:
+                frames.append(df_k)
+            if show_pertamina:
+                frames.append(df_u)
+
+            if frames:
+                df_all = pd.concat(frames, ignore_index=True).reset_index(drop=True)
+            else:
+                df_all = pd.DataFrame()  # kalau dua-duanya tidak dicentang
+
             df_all = df_all.drop(columns=["Tanggal", "Pukul"], errors="ignore")
 
             # Jika ada titik terpilih dan ada di marker_dict -> pakai baris itu
@@ -522,20 +529,14 @@ with tabs[1]:
             horizontal=True
         )
 
-    apply_filter = st.button("Terapkan Filter")
-
     # ================== FILTER DATA BERDASARKAN PILIHAN ==================
-    if apply_filter:
-        if source == "Kerawanan Wilayah":
-            df_stat = df_kerawanan[(df_kerawanan["Tanggal"].dt.date >= start_date) & 
-                                (df_kerawanan["Tanggal"].dt.date <= end_date)]
-        else:
-            df_stat = df_unras[(df_unras["Tanggal"].dt.date >= start_date) & 
-                            (df_unras["Tanggal"].dt.date <= end_date)]
-    else:
-        # default: gabungkan keduanya (atau bisa pilih salah satu default)
+    # Hapus tombol
+    if source == "Kerawanan Wilayah":
         df_stat = df_kerawanan[(df_kerawanan["Tanggal"].dt.date >= start_date) & 
                             (df_kerawanan["Tanggal"].dt.date <= end_date)]
+    else:
+        df_stat = df_unras[(df_unras["Tanggal"].dt.date >= start_date) & 
+                        (df_unras["Tanggal"].dt.date <= end_date)]
 
     # ================== STATISTIK PENYELENGGARA, PJ, LOKASI ==================
     st.subheader("📈 Statistik Penyelenggara, Penanggung Jawab, & Lokasi")
@@ -631,92 +632,30 @@ with tabs[1]:
         st.markdown("### 🔍 Topik Dominan Ditemukan")
         for i, keywords in cluster_keywords.items():
             st.markdown(f"**🧩 Topik {i+1}:** " + ", ".join(keywords))
-
-        vis_option = st.radio("Pilih jenis visualisasi:", ["Grafik Batang","Word Cloud"], horizontal=True)
-        if vis_option == "Grafik Batang":
-            tfidf_scores = X.mean(axis=0).A1
-            tfidf_df = pd.DataFrame({"Kata": terms, "Skor": tfidf_scores})
-            top_words = tfidf_df.sort_values(by="Skor", ascending=False).head(15)
-            fig = px.bar(top_words, x="Skor", y="Kata", orientation="h", title="Top 15 Kata Dominan di Isu")
-            fig.update_layout(yaxis={'categoryorder':'total ascending'}, height=500, margin=dict(l=40,r=40,t=60,b=40))
-            st.plotly_chart(fig, use_container_width=True)
-        else:
-            text_all = " ".join(cleaned)
-            wc = WordCloud(width=1000, height=500, background_color="white", colormap="viridis").generate(text_all)
-            fig, ax = plt.subplots(figsize=(10,5))
-            ax.imshow(wc, interpolation="bilinear")
-            ax.axis("off")
-            st.pyplot(fig)
     else:
         st.warning("Tidak ada data isu yang valid untuk dianalisis pada filter yang dipilih.")
 
-# ================== TAB 4: BERITA ==================
+
+# ================== TAB 3: OSINT BERITA OTOMATIS ==================
 with tabs[2]:
-    st.header("📰 Liputan Media")
-
-    user_keywords = st.text_input(
-        "Masukkan keyword (pisahkan dengan koma, misal: Pertamina,Energi,Geothermal):", 
-        value="Pertamina"
-    )
-
-    if "saved_news" not in st.session_state:
-        st.session_state.saved_news = []  # list untuk simpan berita
-
-    if user_keywords:
-        keywords_list = [kw.strip() for kw in user_keywords.split(",") if kw.strip()]
-        query = "+".join([quote(kw) for kw in keywords_list])
-        rss_url = f"https://news.google.com/rss/search?q={query}&hl=id&gl=ID&ceid=ID:id"
-        feed = feedparser.parse(rss_url)
-
-        one_week_ago = datetime.now() - timedelta(days=7)
-        entries_recent = [e for e in feed.entries if hasattr(e, "published_parsed") and datetime.fromtimestamp(time.mktime(e.published_parsed)) >= one_week_ago]
-
-        if not entries_recent:
-            st.info(f"Tidak ada berita dalam 7 hari terakhir untuk keyword: {user_keywords}")
-        else:
-            for i, entry in enumerate(entries_recent[:10]):
-                title = entry.title if hasattr(entry, "title") else "Tanpa judul"
-                published = entry.get("published", "Tanggal tidak tersedia")
-                summary = getattr(entry, "summary", "")[:400]
-                link = entry.link
-
-                # Judul bisa diklik langsung
-                st.markdown(f"[**{title}**]({link}) ({published})\n\n{summary}...")
-
-                # Tombol simpan
-                if st.button("💾 Simpan", key=f"save_{i}"):
-                    if link not in [n["link"] for n in st.session_state.saved_news]:
-                        st.session_state.saved_news.append({
-                            "title": title,
-                            "link": link,
-                            "published": published,
-                            "summary": summary
-                        })
-                        st.success("Berita tersimpan!")
-                    else:
-                        st.info("Berita sudah disimpan sebelumnya.")
-
-# ================== TAB 5: OSINT BERITA OTOMATIS ==================
-with tabs[3]:
     st.header("📰 Analisis Sentimen Media")
 
-    from collections import Counter
-    import re
-    import pandas as pd
-    import matplotlib.pyplot as plt
-    import html
+    import re, html, pandas as pd, feedparser, time
+    from datetime import datetime, timedelta
+    from urllib.parse import quote
+    from textblob import TextBlob
+    from deep_translator import GoogleTranslator
 
     # ------------------ BAGIAN 1: FEED OTOMATIS ------------------
     st.subheader("🔍 Berita Terbaru (Google News RSS)")
     keyword = st.text_input("Masukkan kata kunci berita:", "Pertamina")
-
     rss_url = f"https://news.google.com/rss/search?q={quote(keyword)}&hl=id&gl=ID&ceid=ID:id"
     feed = feedparser.parse(rss_url)
 
     one_week_ago = datetime.now() - timedelta(days=7)
     entries_recent = [
         e for e in feed.entries
-        if hasattr(e, "published_parsed")
+        if hasattr(e, "published_parsed") 
         and datetime.fromtimestamp(time.mktime(e.published_parsed)) >= one_week_ago
     ]
 
@@ -725,65 +664,75 @@ with tabs[3]:
     else:
         data = []
         for e in entries_recent[:20]:
-            # Bersihkan HTML tags dan entity (&nbsp;, &amp;, dll.)
-            deskripsi_bersih = re.sub("<.*?>", "", getattr(e, "summary", ""))
-            deskripsi_bersih = html.unescape(deskripsi_bersih)
-            deskripsi_bersih = re.sub(r"\s+", " ", deskripsi_bersih).strip()
+            deskripsi = getattr(e, "summary", "")
+            deskripsi = html.unescape(re.sub("<.*?>", "", deskripsi))
+            deskripsi = re.sub(r"\s+", " ", deskripsi).strip()
+
+            judul_link = f"[{e.title}]({e.link})"
+            media = getattr(e, "source", {}).get("title", "Tidak diketahui") if hasattr(e, "source") else "Tidak diketahui"
+            tanggal = getattr(e, "published", "Tidak diketahui")
 
             data.append({
-                "Judul": e.title,
-                "Media": e.get("source", {}).get("title", "Tidak diketahui"),
-                "Tanggal": e.get("published", "Tidak diketahui"),
-                "Deskripsi": deskripsi_bersih,
-                "Link": e.link
+                "Judul": judul_link,
+                "Media": media,
+                "Tanggal": tanggal,
+                "Deskripsi": deskripsi
             })
+
         df_news = pd.DataFrame(data)
 
-        st.dataframe(df_news[["Judul", "Tanggal", "Media", "Deskripsi"]])
+        # Tampilkan tabel markdown dengan CSS
+        st.markdown("### 🗞️ Daftar Berita Terbaru")
+        st.write("Klik judul untuk membuka berita asli di tab baru:")
+
+        table_style = """
+        <style>
+        table {border-collapse: collapse; width: 100%; font-size: 12px; table-layout: fixed;}
+        th, td {border: 1px solid #999; padding: 6px 10px; text-align: left; vertical-align: top; word-wrap: break-word; overflow-wrap: break-word;}
+        th {background-color: #0a2342; color: white; font-weight: bold;}
+        tbody tr:nth-child(odd) {background-color: #E3ECF8;}
+        tbody tr:nth-child(even) {background-color: #D0E3FF;}
+        th:nth-child(1), td:nth-child(1) { width: 250px; }  /* Judul */
+        th:nth-child(2), td:nth-child(2) { width: 140px; }  /* Tanggal */
+        th:nth-child(3), td:nth-child(3) { width: 120px; }  /* Media */
+        </style>
+        """
+        st.markdown(table_style, unsafe_allow_html=True)
+
+        st.markdown(
+            df_news[["Judul", "Tanggal", "Media"]].to_markdown(index=False),
+            unsafe_allow_html=True
+        )
 
         st.divider()
 
         # ------------------ BAGIAN 2: STATISTIK BERITA ------------------
         st.subheader("📊 Statistik Isu Otomatis")
-
-        # Statistik 1: Jumlah berita per media
         df_news["Media"] = df_news["Media"].fillna("Tidak diketahui")
         media_count = df_news["Media"].value_counts().head(10)
+
+        # Tambahkan dummy bar agar ada space di atas
+        media_count_with_space = media_count.copy()
+        media_count_with_space.loc[""] = media_count.max() * 0.05  # 5% dummy
+
         st.write("🔸 Jumlah berita per media:")
         st.bar_chart(media_count)
-
-        # Statistik 2: Kata paling sering muncul di judul/deskripsi
-        text_all = " ".join(df_news["Judul"].tolist() + df_news["Deskripsi"].tolist())
-        words = re.findall(r"\b[a-zA-Z]{4,}\b", text_all.lower())
-        stopwords = ["yang", "untuk", "dengan", "dari", "pada", "akan", "dalam", "karena", "para", "atau", "oleh", "bagi", "saat"]
-        words = [w for w in words if w not in stopwords]
-        word_freq = Counter(words).most_common(15)
-        df_words = pd.DataFrame(word_freq, columns=["Kata", "Frekuensi"])
-
-        st.write("🔹 Kata paling sering muncul:")
-        st.bar_chart(df_words.set_index("Kata"))
 
         st.divider()
 
         # ------------------ BAGIAN 3: ANALISIS SENTIMEN ------------------
         st.subheader("🧭 Analisis Sentimen Berita (Bahasa Indonesia)")
-
-        from textblob import TextBlob
-        from deep_translator import GoogleTranslator
-
         sentiments = []
         for desc in df_news["Deskripsi"]:
             try:
-                # terjemahkan ke bahasa Inggris dulu
                 translated = GoogleTranslator(source='auto', target='en').translate(desc)
                 blob = TextBlob(translated)
                 sentiments.append(blob.sentiment.polarity)
-            except Exception as e:
-                sentiments.append(0.0)  # fallback netral
+            except Exception:
+                sentiments.append(0.0)
 
         df_news["Sentimen"] = sentiments
 
-        # klasifikasi tiap berita
         def label_sentiment(score):
             if score > 0.1:
                 return "Positif"
@@ -794,15 +743,17 @@ with tabs[3]:
 
         df_news["Kategori Sentimen"] = df_news["Sentimen"].apply(label_sentiment)
 
-        # tampilkan statistik rata-rata
         sentiment_avg = df_news["Sentimen"].mean()
         sentiment_label = label_sentiment(sentiment_avg)
-
         st.metric("Rata-rata sentimen berita", f"{sentiment_avg:.2f} ({sentiment_label})")
 
-        # tampilkan distribusi sentimen
-        st.write("📊 Distribusi sentimen berita:")
-        st.bar_chart(df_news["Kategori Sentimen"].value_counts())
+        # Distribusi sentimen
+        sentiment_count = df_news["Kategori Sentimen"].value_counts()
+        sentiment_count_with_space = sentiment_count.copy()
+        sentiment_count_with_space.loc[""] = sentiment_count.max() * 0.05
 
-        # tampilkan tabel berita dengan kategori sentimen
+        st.write("📊 Distribusi sentimen berita:")
+        st.bar_chart(sentiment_count)
+
+        # Tabel berita lengkap
         st.dataframe(df_news[["Judul", "Tanggal", "Media", "Kategori Sentimen", "Deskripsi"]])
