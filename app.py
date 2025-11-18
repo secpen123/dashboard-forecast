@@ -204,7 +204,7 @@ with tabs[0]:
     # ======================
     # FILTER ATAS (SUPER RAPAT)
     # ======================
-    col1, col2, col3, col4 = st.columns([1,1,1,2])
+    col1, col2, col3, col4 = st.columns([2,1,1.5,5.5])
 
     with col1:
         st.markdown("### 🧭 Kerawanan Wilayah") 
@@ -320,7 +320,7 @@ with tabs[0]:
     # ======================
     # KOLOM 70:30 (PETA & DETAIL)
     # ======================
-    col1, col2 = st.columns([6, 4])
+    col1, col2 = st.columns([4.5, 5.5])
 
     with col1:
         # ======================
@@ -460,7 +460,7 @@ with tabs[0]:
                     {"selector": "table", "props": [
                         ("border-collapse", "collapse"),
                         ("width", "100%"),
-                        ("font-size", "12px"),
+                        ("font-size", "20px"),
                         ("table-layout", "fixed"),
                     ]},
                     {"selector": "th, td", "props": [
@@ -470,6 +470,7 @@ with tabs[0]:
                         ("vertical-align", "top"),
                         ("word-wrap", "break-word"),
                         ("overflow-wrap", "break-word"),
+                        ("font-size", "20px"),
                     ]},
                     {"selector": "th", "props": [
                         ("background-color", "#0a2342"),
@@ -690,14 +691,32 @@ with tabs[2]:
 
         table_style = """
         <style>
-        table {border-collapse: collapse; width: 100%; font-size: 12px; table-layout: fixed;}
-        th, td {border: 1px solid #999; padding: 6px 10px; text-align: left; vertical-align: top; word-wrap: break-word; overflow-wrap: break-word;}
-        th {background-color: #0a2342; color: white; font-weight: bold;}
+        table {
+            border-collapse: collapse;
+            width: 100%;
+            font-size: 16px !important;     
+            table-layout: fixed;
+        }
+        th, td {
+            border: 1px solid #999;
+            padding: 10px 14px;               
+            text-align: left;
+            vertical-align: top;
+            word-wrap: break-word;
+            overflow-wrap: break-word;
+            font-size: 16px !important;       
+        }
+        th {
+            background-color: #0a2342;
+            color: white;
+            font-weight: bold;
+        }
         tbody tr:nth-child(odd) {background-color: #E3ECF8;}
         tbody tr:nth-child(even) {background-color: #D0E3FF;}
-        th:nth-child(1), td:nth-child(1) { width: 250px; }  /* Judul */
-        th:nth-child(2), td:nth-child(2) { width: 140px; }  /* Tanggal */
-        th:nth-child(3), td:nth-child(3) { width: 120px; }  /* Media */
+
+        th:nth-child(1), td:nth-child(1) { width: 280px; }  /* Judul */
+        th:nth-child(2), td:nth-child(2) { width: 160px; }  /* Tanggal */
+        th:nth-child(3), td:nth-child(3) { width: 140px; }  /* Media */
         </style>
         """
         st.markdown(table_style, unsafe_allow_html=True)
@@ -760,5 +779,6 @@ with tabs[2]:
 
         # Tabel berita lengkap
         st.dataframe(df_news[["Judul", "Tanggal", "Media", "Kategori Sentimen", "Deskripsi"]])
+
 
 
