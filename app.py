@@ -572,7 +572,7 @@ with tabs[1]:
             pj_count.columns = ["Penanggung Jawab","Jumlah"]
             with col2:
                 st.markdown("**Top 10 Penanggung Jawab**")
-                fig2 = px.bar(pj_count.head(10), x="Jumlah", y="PJ", orientation="h")
+                fig2 = px.bar(pj_count.head(10), x="Jumlah", y="Penanggung Jawab", orientation="h")
                 fig2.update_layout(yaxis={'categoryorder':'total ascending'}, height=400)
                 st.plotly_chart(fig2, use_container_width=True)
         else:
@@ -792,6 +792,7 @@ with tabs[2]:
 
         # Tabel berita lengkap
         st.dataframe(df_news[["Judul", "Tanggal", "Media", "Kategori Sentimen", "Deskripsi"]])
+
 
 
 
