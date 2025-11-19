@@ -565,11 +565,11 @@ with tabs[1]:
             with col1: st.info("Kolom 'Organisasi' tidak tersedia.")
 
         # ----- Penanggung Jawab -----
-        if "PJ" in df_stat.columns:
-            pj_series = df_stat["PJ"].dropna().apply(lambda x: [i.strip() for i in str(x).split(";") if i.strip()])
+        if "Penanggung Jawab" in df_stat.columns:
+            pj_series = df_stat["Penanggung Jawab"].dropna().apply(lambda x: [i.strip() for i in str(x).split(";") if i.strip()])
             pj_flat = [item for sublist in pj_series for item in sublist]
             pj_count = pd.Series(pj_flat).value_counts().reset_index()
-            pj_count.columns = ["PJ","Jumlah"]
+            pj_count.columns = ["Penanggung Jawab","Jumlah"]
             with col2:
                 st.markdown("**Top 10 Penanggung Jawab**")
                 fig2 = px.bar(pj_count.head(10), x="Jumlah", y="PJ", orientation="h")
@@ -792,6 +792,7 @@ with tabs[2]:
 
         # Tabel berita lengkap
         st.dataframe(df_news[["Judul", "Tanggal", "Media", "Kategori Sentimen", "Deskripsi"]])
+
 
 
 
