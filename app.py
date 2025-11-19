@@ -453,7 +453,7 @@ with tabs[0]:
                     )
 
                 # Format kolom Organisasi & PJ
-                for ccol in ["Organisasi", "PJ"]:
+                for ccol in ["Organisasi", "Penanggung Jawab"]:
                     if ccol in df_display.columns:
                         df_display[ccol] = df_display[ccol].apply(
                             lambda x: "<br>".join([i.strip() for i in str(x).split(";") if i.strip()])
@@ -792,6 +792,7 @@ with tabs[2]:
 
         # Tabel berita lengkap
         st.dataframe(df_news[["Judul", "Tanggal", "Media", "Kategori Sentimen", "Deskripsi"]])
+
 
 
 
