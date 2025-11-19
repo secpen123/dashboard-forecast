@@ -462,7 +462,7 @@ with tabs[0]:
                 # ======== STYLE TABEL (ESTETIK SAMA) ========
                 lebar_kolom = {
                     "Organisasi": "120px",
-                    "PJ": "90px",
+                    "Penanggung Jawab": "90px",
                     "Jumlah Massa": "75px",
                     "Tempat": "120px",
                     "Aset Sekitar": "120px",
@@ -792,6 +792,7 @@ with tabs[2]:
 
         # Tabel berita lengkap
         st.dataframe(df_news[["Judul", "Tanggal", "Media", "Kategori Sentimen", "Deskripsi"]])
+
 
 
 
