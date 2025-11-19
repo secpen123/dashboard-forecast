@@ -392,44 +392,59 @@ with tabs[0]:
             st.session_state.selected_coords = (lat, lon)
 
         # ==============================
-        # KOLOM DETAIL KANAN (30%)  <- GANTI DENGAN BLOCK INI
+        # KOLOM DETAIL KANAN (30%)
         # ==============================
         with col2:
-            # Ambil koordinat yang terakhir dipilih (disimpan setelah render st_map)
             selected_coords = st.session_state.get("selected_coords", None)
 
-            # Gabungkan data kerawanan & pertamina (untuk tampilan default)
-            # Gabungkan data sesuai checkbox yang aktif
+            # Gabungkan default data kalau marker tidak dipilih
             frames = []
             if show_kerawanan:
                 frames.append(df_k)
             if show_pertamina:
                 frames.append(df_u)
 
-            if frames:
-                df_all = pd.concat(frames, ignore_index=True).reset_index(drop=True)
-            else:
-                df_all = pd.DataFrame()  # kalau dua-duanya tidak dicentang
-
+            df_all = pd.concat(frames, ignore_index=True).reset_index(drop=True) if frames else pd.DataFrame()
             df_all = df_all.drop(columns=["Tanggal", "Pukul"], errors="ignore")
 
-            # Jika ada titik terpilih dan ada di marker_dict -> pakai baris itu
+            # Jika marker diklik → tampilkan detail berdasarkan koordinat
             if selected_coords is not None and selected_coords in marker_dict:
                 rows = marker_dict[selected_coords]
                 df_detail = pd.DataFrame(rows)
-            else:
-                # Default: tampilkan semua aktivitas untuk tanggal itu
-                df_detail = df_all.copy()
-                # Tidak perlu judul sama sekali
 
-            # Pastikan df_detail ada isinya
-            if df_detail.empty:
-                st.info("Tidak ada data untuk tanggal/koordinat ini.")
-            else:
-                # Hapus kolom yang tidak perlu saat render tabel
-                df_display = df_detail.drop(columns=["Latitude", "Longitude", "Tanggal", "Pukul"], errors="ignore").reset_index(drop=True)
+                # render 1 tabel hasil klik
+                df_to_render_list = [("Detail Lokasi", df_detail)]
 
-                # Format angka jumlah massa → hilangkan .00
+            else:
+                # ============================
+                #   MODE DEFAULT (NO KLIK)
+                #   TAMPILKAN 2 TABEL TERPISAH
+                # ============================
+                df_to_render_list = []
+
+                if show_kerawanan:
+                    df_k_disp = df_k.drop(columns=["Tanggal", "Pukul"], errors="ignore")
+                    df_to_render_list.append(("", df_k_disp))
+
+                if show_pertamina:
+                    df_u_disp = df_u.drop(columns=["Tanggal", "Pukul"], errors="ignore")
+                    df_to_render_list.append(("Isu Pertamina", df_u_disp))
+
+            # =========================================================
+            #   LOOP RENDER TABEL DENGAN STYLE YANG SAMA UNTUK SEMUA
+            # =========================================================
+            for title, df_detail in df_to_render_list:
+
+                if df_detail.empty:
+                    st.info(f"Tidak ada data untuk {title}.")
+                    continue
+
+                df_display = df_detail.drop(
+                    columns=["Latitude", "Longitude", "Tanggal", "Pukul"], 
+                    errors="ignore"
+                ).reset_index(drop=True)
+
+                # Format jumlah massa jadi integer
                 if "Jumlah Massa" in df_display.columns:
                     df_display["Jumlah Massa"] = (
                         pd.to_numeric(df_display["Jumlah Massa"], errors="coerce")
@@ -437,17 +452,17 @@ with tabs[0]:
                         .astype(int)
                     )
 
-                # Format kolom Organisasi & PJ agar tampil baris baru jika ada ";"
+                # Format kolom Organisasi & PJ
                 for ccol in ["Organisasi", "PJ"]:
                     if ccol in df_display.columns:
                         df_display[ccol] = df_display[ccol].apply(
                             lambda x: "<br>".join([i.strip() for i in str(x).split(";") if i.strip()])
                         )
 
-                # ======== ATUR LEBAR KHUSUS BERDASARKAN NAMA KOLOM ========
+                # ======== STYLE TABEL (ESTETIK SAMA) ========
                 lebar_kolom = {
                     "Organisasi": "120px",
-                    "PJ": "90px",   
+                    "PJ": "90px",
                     "Jumlah Massa": "75px",
                     "Tempat": "120px",
                     "Aset Sekitar": "120px",
@@ -481,7 +496,7 @@ with tabs[0]:
                     {"selector": "tbody tr:nth-child(even)", "props": [("background-color", "#D0E3FF")]},
                 ]
 
-                # Tambahkan style lebar per kolom sesuai urutan kolom df_display
+                # lebar kolom sesuai nama
                 for i, col_name in enumerate(df_display.columns, start=1):
                     width = lebar_kolom.get(col_name, "120px")
                     table_styles.append({
@@ -489,24 +504,12 @@ with tabs[0]:
                         "props": [("width", width)],
                     })
 
-                # ====================== HIGHLIGHT BARIS JIKA ADA TITIK TERPILIH ======================
-                df_styled = df_display.style
+                # render
+                if title.strip():
+                    st.markdown(f"### {title}")
+                    st.markdown("---")
 
-                if selected_coords is not None:
-                    # cari baris yang memiliki koordinat sama (kalo df_display masih punya Latitude/Longitude,
-                    # kalau sudah di-drop maka kita cari dari df_detail asli)
-                    idx_to_highlight = []
-                    if "Latitude" in df_detail.columns and "Longitude" in df_detail.columns:
-                        cond = (
-                            (df_detail["Latitude"].round(6) == selected_coords[0]) &
-                            (df_detail["Longitude"].round(6) == selected_coords[1])
-                        )
-                        idx_to_highlight = df_detail[cond].index.tolist()
-
-                # apply table styles & hide index
-                df_styled = df_styled.set_table_styles(table_styles).hide(axis="index")
-
-                # render HTML safe
+                df_styled = df_display.style.set_table_styles(table_styles).hide(axis="index")
                 st.markdown(df_styled.to_html(), unsafe_allow_html=True)
 
 # ================== TAB 2: STATISTIK (ML-BASED) ==================
@@ -652,7 +655,7 @@ with tabs[2]:
 
     # ------------------ BAGIAN 1: FEED OTOMATIS ------------------
     st.subheader("🔍 Berita Terbaru (Google News RSS)")
-    keyword = st.text_input("Masukkan kata kunci berita:", "Pertamina")
+    keyword = st.text_input("Masukkan kata kunci berita:", "Pertamina NRE", "Pertamina Geothermal Energy", "PGE", "PNRE" )
     rss_url = f"https://news.google.com/rss/search?q={quote(keyword)}&hl=id&gl=ID&ceid=ID:id"
     feed = feedparser.parse(rss_url)
 
@@ -779,6 +782,7 @@ with tabs[2]:
 
         # Tabel berita lengkap
         st.dataframe(df_news[["Judul", "Tanggal", "Media", "Kategori Sentimen", "Deskripsi"]])
+
 
 
 
