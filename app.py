@@ -780,8 +780,19 @@ with tabs[2]:
         st.write("📊 Distribusi sentimen berita:")
         st.bar_chart(sentiment_count)
 
+        from pandas.api.types import CategoricalDtype
+
+        order = CategoricalDtype(
+            ["Positif", "Netral", "Negatif"],
+            ordered=True
+        )
+
+        df_news["Kategori Sentimen"] = df_news["Kategori Sentimen"].astype(order)
+        df_news = df_news.sort_values("Kategori Sentimen")
+
         # Tabel berita lengkap
         st.dataframe(df_news[["Judul", "Tanggal", "Media", "Kategori Sentimen", "Deskripsi"]])
+
 
 
 
