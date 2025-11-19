@@ -655,7 +655,7 @@ with tabs[2]:
 
     # ------------------ BAGIAN 1: FEED OTOMATIS ------------------
     st.subheader("🔍 Berita Terbaru (Google News RSS)")
-    keyword = st.text_input("Masukkan kata kunci berita:", "Pertamina NRE", "Pertamina Geothermal Energy", "PGE", "PNRE" )
+    keyword = st.text_input("Masukkan kata kunci berita:", "Pertamina NRE")
     rss_url = f"https://news.google.com/rss/search?q={quote(keyword)}&hl=id&gl=ID&ceid=ID:id"
     feed = feedparser.parse(rss_url)
 
@@ -782,6 +782,7 @@ with tabs[2]:
 
         # Tabel berita lengkap
         st.dataframe(df_news[["Judul", "Tanggal", "Media", "Kategori Sentimen", "Deskripsi"]])
+
 
 
 
